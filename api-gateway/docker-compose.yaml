@@ -1,0 +1,154 @@
+version: '3.8'
+networks:
+  kafka-practice-network:
+    name: kafka-practice-network
+    driver: bridge
+
+services:
+  zookeeper_practice:
+    image: confluentinc/cp-zookeeper:latest
+    container_name: zookeeper_practice
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - '2181:2181'
+    networks:
+      - kafka-practice-network
+
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    hostname: kafka
+    container_name: kafka
+    ports:
+      - 9092:9092
+      - 29092:29092
+    depends_on:
+      - zookeeper_practice
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper_practice:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: true
+      KAFKA_NUM_PARTITIONS: 3
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 1
+
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'kafka-broker-api-versions --bootstrap-server localhost:9092 || exit 1',
+        ]
+      start_period: 15s # Increased time to allow Kafka to initialize
+      interval: 10s # How often the health check is performed
+      timeout: 10s # Maximum time allowed for the health check command to complete
+      retries: 5 # Increased retries
+
+    networks:
+      - kafka-practice-network
+
+  # # Kafka Topic Creator
+  # kafka-topic-creator:
+  #   image: confluentinc/cp-kafka:7.4.0
+  #   container_name: kafka-topic-creator
+  #   depends_on:
+  #     kafka:
+  #       condition: service_healthy
+  #   command: >
+  #     bash -c "
+  #       echo 'Creating Kafka topics...'
+  #       kafka-topics --create --topic auth --bootstrap-server kafka:9092 --partitions 3 --replication-factor 1 --if-not-exists
+  #       kafka-topics --create --topic order --bootstrap-server kafka:9092 --partitions 3 --replication-factor 1 --if-not-exists
+  #       kafka-topics --create --topic payment --bootstrap-server kafka:9092 --partitions 3 --replication-factor 1 --if-not-exists
+  #       echo 'Topics created successfully!'
+  #       kafka-topics --list --bootstrap-server kafka:9092
+  #     "
+  #   networks:
+  #     - kafka-practice-network
+
+  # API Gateway Server (NestJS Application)
+  api-gateway:
+    image: node:22-alpine
+    container_name: api-gateway-server
+    depends_on:
+      kafka:
+        condition: service_healthy
+      # kafka-topic-creator:
+      #   condition: service_completed_successfully
+    ports:
+      - '8080:8080'
+      - '9229:9229' # Debug port
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: npm run start:dev
+    environment:
+      # Application Environment
+      - NODE_ENV=development
+      - PORT=8080
+
+      # Kafka Configuration
+      - KAFKA_BROKER=kafka:9092
+      - KAFKA_RETRY_ATTEMPTS=5
+      - KAFKA_RETRY_DELAY=3000
+
+      # Service Discovery
+      - AUTH_SERVICE_URL=http://auth-microservice:3001
+      - ORDER_SERVICE_URL=http://order-microservice:3002
+      - PAYMENT_SERVICE_URL=http://payment-microservice:3003
+
+      # JWT Configuration
+      - JWT_SECRET=11&**A12@#S3CR3T
+      - JWT_EXPIRES_IN=1h
+
+      # CORS Configuration
+      - CORS_ORIGIN=http://localhost:3000,http://localhost:8080
+
+      # Logging
+      - LOG_LEVEL=debug
+
+      # Rate Limiting
+      - RATE_LIMIT_TTL=60
+      - RATE_LIMIT_LIMIT=100
+    networks:
+      - kafka-practice-network
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1',
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Kafdrop - Kafka Web UI
+  kafdrop:
+    image: obsidiandynamics/kafdrop:4.0.1
+    platform: linux/amd64
+    container_name: kafdrop
+    depends_on:
+      kafka:
+        condition: service_healthy
+      # kafka-topic-creator:
+      #   condition: service_completed_successfully
+    ports:
+      - '9000:9000'
+    environment:
+      KAFKA_BROKERCONNECT: kafka:9092
+      JVM_OPTS: '-Xms32M -Xmx64M'
+      SERVER_SERVLET_CONTEXTPATH: '/'
+    networks:
+      - kafka-practice-network
+    restart: unless-stopped
+    healthcheck:
+      test:
+        ['CMD-SHELL', 'curl -f http://localhost:9000/actuator/health || exit 1']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
