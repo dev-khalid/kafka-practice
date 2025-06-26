@@ -1,23 +1,52 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
+import { Logger } from '@nestjs/common';
 
 async function bootstrap() {
+  const logger = new Logger('OrderMicroservice');
+
+  // Get Kafka broker from environment or use default
+  const kafkaBroker = process.env.KAFKA_BROKER || 'kafka:9092';
+  const consumerGroupId =
+    process.env.KAFKA_ORDER_CONSUMER_GROUP_ID || 'order-consumer-group';
+
+  logger.log(`Connecting to Kafka broker: ${kafkaBroker}`);
+  logger.log(`Using consumer group: ${consumerGroupId}`);
+
   const app = await NestFactory.createMicroservice<MicroserviceOptions>(
     AppModule,
     {
       transport: Transport.KAFKA,
       options: {
         client: {
-          brokers: [process.env.KAFKA_BROKER],
+          clientId: 'order-microservice-client',
+          brokers: [kafkaBroker],
+          connectionTimeout: 30000,
+          requestTimeout: 30000,
+          retry: {
+            retries: 5,
+            initialRetryTime: 300,
+            maxRetryTime: 30000,
+          },
         },
         consumer: {
-          groupId:
-            process.env.KAFKA_ORDER_CONSUMER_GROUP_ID || 'order-consumer-group',
+          groupId: consumerGroupId,
+          allowAutoTopicCreation: true,
+          retry: {
+            retries: 5,
+          },
         },
       },
     },
   );
+
+  app.useLogger(logger);
   await app.listen();
+  logger.log('Order microservice is listening for Kafka events...');
 }
-bootstrap();
+
+bootstrap().catch((error) => {
+  console.error('Failed to start order microservice:', error);
+  process.exit(1);
+});

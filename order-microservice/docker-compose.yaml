@@ -18,6 +18,7 @@ services:
 
       # Kafka Configuration
       - KAFKA_BROKER=kafka:9092
+      - KAFKA_ORDER_CONSUMER_GROUP_ID=order-consumer-group
       - KAFKA_RETRY_ATTEMPTS=5
       - KAFKA_RETRY_DELAY=3000
 
