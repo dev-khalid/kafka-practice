@@ -1,0 +1,33 @@
+networks:
+  kafka-practice-network:
+    external: true
+
+services:
+  payment-microservice:
+    image: node:22-alpine
+    container_name: payment-microservice
+    ports:
+      - '8082:8080'
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: npm run start:dev
+    environment:
+      # Application Environment
+      - NODE_ENV=development
+
+      # Kafka Configuration
+      - KAFKA_BROKER=kafka:9092
+      - KAFKA_PAYMENT_CONSUMER_GROUP_ID=payment-consumer-group
+      - KAFKA_RETRY_ATTEMPTS=5
+      - KAFKA_RETRY_DELAY=3000
+
+      # Service Discovery
+      - AUTH_SERVICE_URL=http://auth-microservice:3001
+      - API_GATEWAY_URL=http://api-gateway:8080
+      - ORDER_SERVICE_URL=http://order-microservice:3002
+      # Logging
+      - LOG_LEVEL=debug
+    networks:
+      - kafka-practice-network
+    restart: unless-stopped

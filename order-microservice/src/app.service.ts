@@ -14,9 +14,6 @@ export class AppService {
     // Simulate async processing
     await new Promise((resolve) => setTimeout(resolve, 100));
 
-    // Add your order processing logic here
-    // For example: save to database, validate order, etc.
-
     this.logger.log('Order processed successfully');
   }
 }

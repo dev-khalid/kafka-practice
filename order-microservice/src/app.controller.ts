@@ -15,13 +15,11 @@ export class AppController {
 
   @EventPattern('place_order')
   async handlePlaceOrder(@Payload() data: any) {
-    this.logger.log('Received place_order event:', JSON.stringify(data));
     try {
       // Handle the order placement logic here
       await this.appService.processOrder(data);
-      this.logger.log('Successfully processed order');
     } catch (error) {
-      this.logger.error('Error processing order:', error);
+      this.logger.error('Error processing order:', error, JSON.stringify(data));
       throw error;
     }
   }

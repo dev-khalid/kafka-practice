@@ -50,25 +50,6 @@ services:
     networks:
       - kafka-practice-network
 
-  # # Kafka Topic Creator
-  # kafka-topic-creator:
-  #   image: confluentinc/cp-kafka:7.4.0
-  #   container_name: kafka-topic-creator
-  #   depends_on:
-  #     kafka:
-  #       condition: service_healthy
-  #   command: >
-  #     bash -c "
-  #       echo 'Creating Kafka topics...'
-  #       kafka-topics --create --topic auth --bootstrap-server kafka:9092 --partitions 3 --replication-factor 1 --if-not-exists
-  #       kafka-topics --create --topic order --bootstrap-server kafka:9092 --partitions 3 --replication-factor 1 --if-not-exists
-  #       kafka-topics --create --topic payment --bootstrap-server kafka:9092 --partitions 3 --replication-factor 1 --if-not-exists
-  #       echo 'Topics created successfully!'
-  #       kafka-topics --list --bootstrap-server kafka:9092
-  #     "
-  #   networks:
-  #     - kafka-practice-network
-
   # API Gateway Server (NestJS Application)
   api-gateway:
     image: node:22-alpine
