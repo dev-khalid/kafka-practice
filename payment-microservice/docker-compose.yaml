@@ -22,6 +22,9 @@ services:
       - KAFKA_RETRY_ATTEMPTS=5
       - KAFKA_RETRY_DELAY=3000
 
+      # Schema Registry Configuration
+      - SCHEMA_REGISTRY_URL=http://schema-registry:8081
+
       # Service Discovery
       - AUTH_SERVICE_URL=http://auth-microservice:3001
       - API_GATEWAY_URL=http://api-gateway:8080

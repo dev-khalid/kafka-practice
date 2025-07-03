@@ -1,6 +1,5 @@
 import { Body, Controller, Get, Post } from '@nestjs/common';
-import { AppService } from './app.service';
-import { Observable } from 'rxjs';
+import { AppService, PlaceOrderInput } from './app.service';
 
 @Controller()
 export class AppController {
@@ -21,7 +20,9 @@ export class AppController {
   }
 
   @Post('order')
-  placeOrder(@Body() order: any): Observable<any> {
-    return this.appService.placeOrder(order);
+  async placeOrder(
+    @Body() order: PlaceOrderInput,
+  ): Promise<{ success: boolean; orderId: string }> {
+    return await this.appService.placeOrder(order);
   }
 }

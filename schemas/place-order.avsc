@@ -1,0 +1,128 @@
+{
+  "type": "record",
+  "name": "PlaceOrder",
+  "namespace": "com.kafkapractice.events",
+  "doc": "Schema for place order events",
+  "fields": [
+    {
+      "name": "orderId",
+      "type": "string",
+      "doc": "Unique identifier for the order"
+    },
+    {
+      "name": "customerId",
+      "type": "string",
+      "doc": "Unique identifier for the customer placing the order"
+    },
+    {
+      "name": "timestamp",
+      "type": "long",
+      "logicalType": "timestamp-millis",
+      "doc": "Timestamp when the order was placed (in milliseconds since epoch)"
+    },
+    {
+      "name": "items",
+      "type": {
+        "type": "array",
+        "items": {
+          "type": "record",
+          "name": "OrderItem",
+          "fields": [
+            {
+              "name": "productId",
+              "type": "string",
+              "doc": "Unique identifier for the product"
+            },
+            {
+              "name": "productName",
+              "type": "string",
+              "doc": "Name of the product"
+            },
+            {
+              "name": "quantity",
+              "type": "int",
+              "doc": "Quantity of the product ordered"
+            },
+            {
+              "name": "unitPrice",
+              "type": "double",
+              "doc": "Price per unit of the product"
+            }
+          ]
+        }
+      },
+      "doc": "List of items in the order"
+    },
+    {
+      "name": "totalAmount",
+      "type": "double",
+      "doc": "Total amount for the order"
+    },
+    {
+      "name": "currency",
+      "type": "string",
+      "default": "USD",
+      "doc": "Currency code for the order amount"
+    },
+    {
+      "name": "shippingAddress",
+      "type": {
+        "type": "record",
+        "name": "Address",
+        "fields": [
+          {
+            "name": "street",
+            "type": "string",
+            "doc": "Street address"
+          },
+          {
+            "name": "city",
+            "type": "string",
+            "doc": "City"
+          },
+          {
+            "name": "state",
+            "type": ["null", "string"],
+            "default": null,
+            "doc": "State or province (optional)"
+          },
+          {
+            "name": "zipCode",
+            "type": "string",
+            "doc": "ZIP or postal code"
+          },
+          {
+            "name": "country",
+            "type": "string",
+            "doc": "Country code"
+          }
+        ]
+      },
+      "doc": "Shipping address for the order"
+    },
+    {
+      "name": "paymentMethod",
+      "type": {
+        "type": "enum",
+        "name": "PaymentMethod",
+        "symbols": [
+          "CREDIT_CARD",
+          "DEBIT_CARD",
+          "PAYPAL",
+          "BANK_TRANSFER",
+          "CASH_ON_DELIVERY"
+        ]
+      },
+      "doc": "Payment method for the order"
+    },
+    {
+      "name": "metadata",
+      "type": {
+        "type": "map",
+        "values": "string"
+      },
+      "default": {},
+      "doc": "Additional metadata as key-value pairs"
+    }
+  ]
+}

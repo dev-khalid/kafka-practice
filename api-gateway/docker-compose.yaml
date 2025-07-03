@@ -50,12 +50,38 @@ services:
     networks:
       - kafka-practice-network
 
+  # Schema Registry
+  schema-registry:
+    image: confluentinc/cp-schema-registry:7.4.0
+    hostname: schema-registry
+    container_name: schema-registry
+    depends_on:
+      - kafka
+    ports:
+      - '8081:8081'
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: 'kafka:29092'
+      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
+      SCHEMA_REGISTRY_KAFKASTORE_TOPIC: _schemas
+      SCHEMA_REGISTRY_DEBUG: 'true'
+    networks:
+      - kafka-practice-network
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -f http://localhost:8081/subjects || exit 1']
+      start_period: 20s
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
   # API Gateway Server (NestJS Application)
   api-gateway:
     image: node:22-alpine
     container_name: api-gateway-server
     depends_on:
       kafka:
+        condition: service_healthy
+      schema-registry:
         condition: service_healthy
       # kafka-topic-creator:
       #   condition: service_completed_successfully
@@ -75,6 +101,9 @@ services:
       - KAFKA_BROKER=kafka:9092
       - KAFKA_RETRY_ATTEMPTS=5
       - KAFKA_RETRY_DELAY=3000
+
+      # Schema Registry Configuration
+      - SCHEMA_REGISTRY_URL=http://schema-registry:8081
 
       # Service Discovery
       - AUTH_SERVICE_URL=http://auth-microservice:3001
@@ -132,4 +161,3 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-

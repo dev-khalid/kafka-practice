@@ -5,6 +5,8 @@ import { AppService } from './app.service';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { HealthModule } from './health/health.module';
 import { KafkaTopics } from './config';
+import { SchemaRegistryService } from './schema-registry.service';
+import { KafkaProducerService } from './kafka-producer.service';
 
 @Module({
   imports: [
@@ -65,6 +67,6 @@ import { KafkaTopics } from './config';
     HealthModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, SchemaRegistryService, KafkaProducerService],
 })
 export class AppModule {}
